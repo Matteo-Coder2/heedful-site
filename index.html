@@ -1,0 +1,1600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Heedful: Stop pasting secrets into ChatGPT &amp; other AI chats</title>
+<meta name="description" content="Free Chrome extension that warns you before pasting API keys, SSNs, customer data, or 75+ other sensitive things into ChatGPT, Claude, Gemini, and 9 more AI chat sites. 100% on-device. No tracking. Open-source detection rules." />
+<meta property="og:title" content="Heedful: Stop pasting secrets into ChatGPT" />
+<meta property="og:description" content="On-device DLP for AI chats. Free. Open detection rules. No cloud." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://heedful.app" />
+<meta property="og:image" content="https://heedful.app/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Heedful logo with tagline: Stop pasting secrets into AI chats. On-device DLP for ChatGPT, Claude, Gemini and 5 more." />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Heedful: Stop pasting secrets into ChatGPT" />
+<meta name="twitter:description" content="On-device DLP for AI chats. Free. Open detection rules. No cloud." />
+<meta name="twitter:image" content="https://heedful.app/og-image.png" />
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #161618;
+    --surface-2: #1f1f23;
+    --surface-3: #28282e;
+    --border: #2a2a30;
+    --text: #f5f5f7;
+    --muted: #a0a0a8;
+    --muted-2: #6a6a72;
+    --critical: #ef4444;
+    --high: #f97316;
+    --medium: #eab308;
+    --low: #38bdf8;
+    --good: #4ade80;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--text);
+    scroll-behavior: smooth;
+  }
+  html {
+    /* Stop iOS Safari from auto-resizing text on landscape rotation. */
+    -webkit-text-size-adjust: 100%;
+    width: 100%;
+    /* overflow-x:hidden on body alone isn't always enough on iOS Safari —
+       sometimes the scroll happens on the html element. Belt-and-suspenders. */
+    overflow-x: clip;
+  }
+  body {
+    font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    width: 100%;
+    /* Prevent any oversized child from forcing horizontal scroll. */
+    overflow-x: clip;
+    position: relative;
+  }
+  a { color: inherit; text-decoration: none; }
+
+  /* Layout */
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 28px; }
+  section { padding: 64px 0; }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(13, 13, 15, 0.85); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner {
+    max-width: 1100px; margin: 0 auto; padding: 14px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo {
+    font-weight: 600; font-size: 16px; letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .logo-icon {
+    width: 26px; height: 26px;
+    display: block;
+    /* Drop a subtle cyan glow behind the padlock so it reads at a glance
+       on the dark nav, the way the dot used to. */
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.35));
+  }
+  .nav-links {
+    display: flex; gap: 24px; font-size: 13px; color: var(--muted);
+  }
+  .nav-links a:hover { color: var(--text); }
+  .nav-cta {
+    background: var(--text); color: var(--bg);
+    padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 400;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    transition: background .15s;
+  }
+  .nav-cta:hover { background: var(--muted); }
+
+  /* Mobile nav: hide the in-page anchor links — they'd all collapse and
+     overlap at this width. Keep logo + Install button only. The hidden
+     sections are still reachable from the footer. */
+  @media (max-width: 720px) {
+    .nav-links { display: none; }
+    .nav-inner { padding: 12px 18px; }
+    .logo { font-size: 15px; }
+  }
+
+  /* Hero */
+  .hero { padding: 72px 0 56px; position: relative; }
+  .hero-grid {
+    display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 56px;
+    align-items: center;
+  }
+  @media (max-width: 880px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+  }
+  .hero-eyebrow {
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 20px;
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px;
+    background: var(--surface);
+  }
+  .hero-eyebrow .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--good);
+  }
+  h1 {
+    font-size: 56px; line-height: 1.02; letter-spacing: -0.03em;
+    margin: 0 0 20px; font-weight: 600;
+  }
+  h1 .accent { color: var(--low); }
+  @media (max-width: 880px) { h1 { font-size: 40px; } }
+  .hero-sub {
+    font-size: 18px; line-height: 1.55; color: var(--muted);
+    margin: 0 0 32px; max-width: 540px;
+  }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .btn {
+    padding: 12px 22px; border-radius: 10px; font-size: 15px; font-weight: 500;
+    transition: all .15s; display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer; border: 1px solid transparent;
+  }
+  .btn-primary {
+    background: var(--text); color: var(--bg);
+    text-transform: uppercase; font-weight: 400; letter-spacing: 0.06em;
+  }
+  .btn-primary:hover { background: var(--muted); }
+  .btn-secondary {
+    background: transparent; color: var(--text);
+    border-color: var(--border);
+  }
+  .btn-secondary:hover { background: var(--surface); }
+  .trust-row {
+    display: flex; gap: 24px; margin-top: 28px; font-size: 13px; color: var(--muted);
+    flex-wrap: wrap;
+  }
+  .trust-row span { display: inline-flex; align-items: center; gap: 6px; }
+  .trust-row span::before { content: "✓"; color: var(--good); }
+
+  /* Hero modal preview */
+  .modal-preview {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.5), 0 0 0 1px rgba(56,189,248,.06);
+    position: relative;
+  }
+  .modal-preview::before {
+    content: ""; position: absolute; inset: -1px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, rgba(56,189,248,.15), transparent 50%);
+    z-index: -1;
+  }
+  .modal-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+  .modal-header .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--critical);
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.55);
+    animation: pulse-warn 2.4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  @keyframes pulse-warn {
+    0% {
+      box-shadow:
+        0 0 0 0 rgba(239, 68, 68, 0.6),
+        0 0 0 0 rgba(239, 68, 68, 0.4);
+    }
+    70% {
+      box-shadow:
+        0 0 0 10px rgba(239, 68, 68, 0),
+        0 0 16px 4px rgba(239, 68, 68, 0.2);
+    }
+    100% {
+      box-shadow:
+        0 0 0 0 rgba(239, 68, 68, 0),
+        0 0 0 0 rgba(239, 68, 68, 0);
+    }
+  }
+  .modal-title { font-size: 15px; font-weight: 600; }
+  .modal-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .finding-row {
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px; margin: 8px 0;
+    display: flex; align-items: start; gap: 12px;
+  }
+  /* The flex:1 inner div inside .finding-row defaults to min-width:auto,
+     which means it can't shrink below the intrinsic size of its widest
+     child (typically the .finding-actions row of 3 spans). On mobile
+     that pushes the modal wider than the viewport. Forcing min-width:0
+     allows shrinking and lets the content wrap. */
+  .finding-row > div { min-width: 0; }
+  .finding-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+  .finding-dot.crit { background: var(--critical); }
+  .finding-dot.high { background: var(--high); }
+  .finding-dot.med { background: var(--medium); }
+  .finding-label { font-size: 13px; font-weight: 500; }
+  .finding-snippet {
+    font-family: ui-monospace, monospace; font-size: 12px;
+    color: var(--muted); margin-top: 2px;
+    /* Long monospace strings (e.g. sk-ant-•••••cdef) have no break points,
+       so on narrow viewports they force the page wider than the screen.
+       overflow-wrap: anywhere lets the browser break mid-string. */
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  /* Same protection for the inline "example-context" lines in the
+     semantic / customer-records sections. */
+  .example-context { overflow-wrap: anywhere; word-break: break-word; }
+  .finding-actions {
+    font-size: 12px; color: var(--muted); margin-top: 6px;
+    display: flex; flex-wrap: wrap; row-gap: 4px; column-gap: 14px;
+  }
+  .finding-actions span:hover { color: var(--text); cursor: pointer; }
+  .finding-actions .allow { color: var(--low); }
+  .modal-footer {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; justify-content: flex-end;
+  }
+  .modal-btn {
+    font-size: 12px; padding: 6px 12px; border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .modal-btn.redact { background: rgba(56,189,248,.1); border-color: rgba(56,189,248,.3); color: var(--low); }
+
+  /* Problem section. Single distilled claim, no stat-card trio */
+  .problem-section {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .problem-claim {
+    font-size: clamp(28px, 4vw, 44px);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    max-width: 920px;
+    margin: 16px 0 32px;
+    font-weight: 500;
+  }
+  .problem-stat {
+    color: var(--low);
+    font-weight: 600;
+    font-feature-settings: "tnum" 1;
+  }
+  .problem-citation {
+    font-size: 14px;
+    color: var(--muted);
+    margin: 0;
+    max-width: 680px;
+    line-height: 1.6;
+    padding-left: 16px;
+    border-left: 1px solid var(--border);
+  }
+
+  /* Section headers */
+  .section-eyebrow {
+    font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--low); margin-bottom: 12px; font-weight: 500;
+  }
+  h2 {
+    font-size: 40px; line-height: 1.1; letter-spacing: -0.02em;
+    margin: 0 0 16px; font-weight: 600;
+  }
+  @media (max-width: 720px) { h2 { font-size: 32px; } }
+  .section-sub {
+    font-size: 17px; color: var(--muted); margin: 0 0 48px; max-width: 640px;
+    line-height: 1.55;
+  }
+  .how-headline {
+    margin-bottom: 6px;
+  }
+  .how-subhead {
+    font-size: 28px; line-height: 1.15; letter-spacing: -0.015em;
+    color: var(--low); font-weight: 500;
+    margin: 0 0 24px;
+  }
+  @media (max-width: 720px) { .how-subhead { font-size: 22px; } }
+
+  /* Features grid */
+  .feature-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;
+  }
+  @media (max-width: 880px) { .feature-grid { grid-template-columns: 1fr; } }
+  .feature {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 28px;
+  }
+  .feature-icon {
+    width: 44px; height: 44px; border-radius: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 18px;
+    color: var(--low);
+  }
+  .feature h3 {
+    font-size: 17px; font-weight: 600; margin: 0 0 14px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .feature p { font-size: 14px; color: var(--muted); margin: 0; line-height: 1.55; }
+  .feature-list {
+    list-style: none; padding: 0; margin: 0 0 14px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .feature-list li {
+    font-size: 13.5px; color: var(--muted); line-height: 1.55;
+    padding-left: 14px; position: relative;
+  }
+  .feature-list li::before {
+    content: ""; position: absolute; left: 0; top: 9px;
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--low);
+  }
+  .feature-list li strong { color: var(--text); font-weight: 500; }
+  .feature-foot {
+    font-size: 12px; color: var(--muted-2);
+    padding-top: 12px; border-top: 1px solid var(--border);
+    margin: 0;
+  }
+  .pro-tag {
+    font-size: 10px; padding: 2px 8px; border-radius: 999px;
+    background: rgba(56,189,248,.15); color: var(--low);
+    letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600;
+  }
+
+  /* Sites: flat horizontal row with hairline separators. No cards.
+     Top border is built FROM the first-row lis (not the container) so it
+     renders pixel-identical to the row dividers below. */
+  .sites-row {
+    list-style: none; padding: 0;
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 0;
+    margin: 36px 0 0;
+  }
+  @media (max-width: 880px) { .sites-row { grid-template-columns: repeat(2, 1fr); } }
+  .sites-row li {
+    padding: 18px 14px;
+    border-bottom: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    display: flex; align-items: center;
+    gap: 12px;
+  }
+  /* Top border on the first row only — counts depend on column count. */
+  .sites-row li:nth-child(-n+4) { border-top: 1px solid var(--border); }
+  .sites-row li:nth-child(4n) { border-right: 0; }
+  @media (max-width: 880px) {
+    .sites-row li:nth-child(-n+4) { border-top: 0; }
+    .sites-row li:nth-child(-n+2) { border-top: 1px solid var(--border); }
+    .sites-row li:nth-child(4n) { border-right: 1px solid var(--border); }
+    .sites-row li:nth-child(2n) { border-right: 0; }
+  }
+  /* On phones, push the dividers edge-to-edge of the viewport by
+     canceling out the container's 28px horizontal padding. EVERY
+     spatial dimension in the cell — padding, logo size, gap, name
+     font, host font — uses clamp() with viewport units so the whole
+     row scales fluidly with screen width. At 320px (iPhone SE 1st)
+     the row is tight; at 430px (Pro Max) it's near-desktop size.
+     No abrupt step at any breakpoint, no clipping, no wrap. */
+  @media (max-width: 720px) {
+    .sites-row { margin-left: -28px; margin-right: -28px; }
+    /* Shrink the logo + padding + gap more aggressively so there's
+       enough room for the longest host (copilot.microsoft.com, 21
+       chars) at small viewports. Real monospace fonts are wider than
+       0.6em — using 0.65em as the safe ratio. */
+    .sites-row li {
+      padding: clamp(10px, 3vw, 18px) clamp(8px, 2.8vw, 18px);
+      gap: clamp(5px, 1.8vw, 12px);
+    }
+    .sites-row__logo {
+      width: clamp(16px, 5vw, 28px);
+      height: clamp(16px, 5vw, 28px);
+      flex-shrink: 0;
+    }
+    /* Fonts scale with viewport. Caps prevent them from growing past the
+       desktop sizes. The 2.0vw host font keeps copilot.microsoft.com
+       safely under the cell width at every viewport ≥ 320px. */
+    .sites-row__name { font-size: clamp(10px, 2.7vw, 14px); }
+    .sites-row__host { font-size: clamp(7px, 2.0vw, 12px); }
+  }
+  .sites-row li > div { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .sites-row__logo {
+    width: 28px; height: 28px; border-radius: 7px;
+    flex-shrink: 0;
+    object-fit: cover;
+    background: var(--surface-2);
+    display: block;
+  }
+  .sites-row__name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .sites-row__host {
+    font-size: 12px; color: var(--muted-2); font-family: ui-monospace, monospace;
+    /* Never wrap — we shrink the font on mobile (below) instead of letting
+       the longest host string break across two lines, which looks cheap. */
+    white-space: nowrap;
+  }
+
+  /* Privacy: editorial two-column prose, no card grid. */
+  .privacy-claim {
+    margin: 32px 0 40px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid var(--border);
+  }
+  .privacy-claim__eyebrow {
+    font-size: 12px; color: var(--good);
+    letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .privacy-claim__title {
+    font-size: clamp(24px, 3vw, 32px);
+    margin: 0; letter-spacing: -0.02em; font-weight: 500;
+    line-height: 1.2;
+    max-width: 720px;
+  }
+  .privacy-list {
+    display: grid; grid-template-columns: repeat(2, 1fr);
+    column-gap: 56px; row-gap: 0;
+    margin: 0;
+  }
+  @media (max-width: 720px) { .privacy-list { grid-template-columns: 1fr; } }
+  .privacy-list__item {
+    padding: 20px 0;
+    border-top: 1px solid var(--border);
+  }
+  .privacy-list__item:first-child,
+  .privacy-list__item:nth-child(2) { border-top: 0; padding-top: 0; }
+  @media (max-width: 720px) {
+    .privacy-list__item:nth-child(2) { border-top: 1px solid var(--border); padding-top: 20px; }
+  }
+  .privacy-list dt {
+    font-size: 14px; font-weight: 500; color: var(--text);
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .privacy-list dt::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--good); flex-shrink: 0;
+  }
+  .privacy-list dd {
+    font-size: 13px; color: var(--muted); margin: 0; line-height: 1.6;
+    padding-left: 14px;
+  }
+  .inline-code {
+    background: var(--bg); padding: 1px 6px; border-radius: 3px;
+    color: var(--low); font-family: ui-monospace, monospace; font-size: 12px;
+  }
+
+  /* Try-it interactive demo */
+  .try-section { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .try-layout {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 32px;
+    margin-top: 16px; align-items: start;
+  }
+  @media (max-width: 880px) { .try-layout { grid-template-columns: 1fr; gap: 24px; } }
+
+  .try-composer__label {
+    font-size: 11px; color: var(--muted); letter-spacing: 0.06em;
+    text-transform: uppercase; font-weight: 500;
+    margin-bottom: 10px;
+  }
+  .try-chips {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .try-chip {
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--muted); font: inherit; font-size: 12.5px;
+    padding: 7px 12px; border-radius: 999px;
+    cursor: pointer; transition: all .15s;
+  }
+  .try-chip:hover { background: var(--surface-2); color: var(--text); border-color: var(--muted-2); }
+  .try-chip.is-active { background: rgba(56,189,248,.12); border-color: rgba(56,189,248,.45); color: var(--low); }
+
+  .try-input {
+    width: 100%; box-sizing: border-box;
+    background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font: inherit;
+    /* 16px minimum: iOS Safari auto-zooms any focused form input with
+       font-size < 16px, which on a readonly demo textarea is jarring.
+       Desktop overrides to 13px below via pointer-fine (mouse). */
+    font-size: 16px;
+    font-family: ui-monospace, monospace;
+    padding: 14px 16px; border-radius: 10px;
+    outline: none; resize: vertical;
+    line-height: 1.6;
+    transition: border-color .15s;
+  }
+  @media (pointer: fine) {
+    .try-input { font-size: 13px; }
+  }
+  .try-input:focus { border-color: var(--low); }
+  .try-input::placeholder { color: var(--muted-2); }
+
+  .try-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; color: var(--muted-2); margin-top: 8px;
+  }
+  .try-clear {
+    background: none; border: 0; color: var(--muted); font: inherit; font-size: 12px;
+    cursor: pointer; padding: 0;
+  }
+  .try-clear:hover { color: var(--text); text-decoration: underline; }
+
+  .try-modal-wrap { position: sticky; top: 76px; }
+  .try-modal { min-height: 320px; }
+  .try-findings {
+    min-height: 180px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .try-empty {
+    color: var(--muted-2); font-size: 13px; text-align: center;
+    padding: 40px 16px; line-height: 1.55;
+  }
+  .try-findings .finding-row { margin: 0; }
+
+  /* Second preview (broadens beyond dev persona) */
+  .second-preview { background: var(--surface); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .second-preview__layout {
+    display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 56px;
+    align-items: center;
+  }
+  @media (max-width: 880px) {
+    .second-preview__layout { grid-template-columns: 1fr; gap: 40px; }
+  }
+  .second-preview__bullets {
+    list-style: none; padding: 0; margin: 0;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .second-preview__bullets li {
+    font-size: 14px; color: var(--muted); padding-left: 14px;
+    position: relative; line-height: 1.55;
+  }
+  .second-preview__bullets li::before {
+    content: ""; position: absolute; left: 0; top: 9px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--low);
+  }
+  .modal-preview--compact { padding: 20px; }
+  .modal-preview--compact .finding-row { padding: 10px 12px; }
+  .example-context {
+    font-size: 12.5px; color: var(--muted);
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 14px;
+    margin-bottom: 12px;
+    font-style: italic; line-height: 1.5;
+  }
+
+  /* Pricing */
+  /* Billing toggle */
+  .billing-toggle {
+    display: inline-flex; padding: 4px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 999px;
+    margin: 24px 0 12px;
+  }
+  .billing-toggle__option {
+    background: transparent; color: var(--muted);
+    border: 0; padding: 8px 18px; border-radius: 999px;
+    cursor: pointer; font: inherit; font-size: 13px; font-weight: 500;
+    transition: all .15s;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .billing-toggle__option:hover { color: var(--text); }
+  .billing-toggle__option.is-active {
+    background: var(--bg); color: var(--text);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+  }
+  .billing-toggle__save {
+    font-size: 10px; padding: 2px 8px; border-radius: 999px;
+    background: rgba(74,222,128,.15); color: var(--good);
+    letter-spacing: 0.04em; font-weight: 600;
+  }
+
+  .pricing-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    margin-top: 24px;
+  }
+  @media (max-width: 720px) { .pricing-grid { grid-template-columns: 1fr; } }
+  .plan {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 32px;
+    display: flex; flex-direction: column;
+  }
+  .plan.pro {
+    background: linear-gradient(180deg, var(--surface) 0%, rgba(56,189,248,.05) 100%);
+    border-color: rgba(56,189,248,.35);
+    position: relative;
+  }
+  .plan-badge {
+    position: absolute; top: -10px; right: 24px;
+    background: var(--low); color: var(--bg);
+    font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+    letter-spacing: 0.02em;
+  }
+  .plan-name { font-size: 13px; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase; }
+  .plan-price {
+    font-size: 44px; font-weight: 600; letter-spacing: -0.02em;
+    margin: 8px 0 4px;
+  }
+  .plan-price .currency { font-size: 24px; vertical-align: top; color: var(--muted); }
+  .plan-price .period { font-size: 14px; color: var(--muted); font-weight: 400; }
+  .plan-tagline { font-size: 14px; color: var(--muted); margin: 0 0 20px; }
+  @media (min-width: 721px) { .plan-tagline { min-height: 40px; } }
+  .plan-features { list-style: none; padding: 0; margin: 0 0 24px; }
+  .plan-features li {
+    font-size: 14px; padding: 7px 0;
+    display: flex; align-items: start; gap: 10px;
+    color: var(--muted);
+  }
+  /* Default check is green. Free items use this. Pro items inherited from
+     Free also use this. Pro-only items get the blue check + brighter text. */
+  .plan-features li::before { content: "✓"; color: var(--good); flex-shrink: 0; }
+  .plan-features li.pro-only { color: var(--text); }
+  .plan-features li.pro-only::before { color: var(--low); }
+  .plan-cta {
+    margin-top: auto;
+    text-align: center; padding: 14px;
+    border-radius: 10px; font-size: 14px; font-weight: 500;
+    transition: all .15s;
+  }
+  .plan-cta.free {
+    background: var(--text); color: var(--bg);
+  }
+  .plan-cta.free:hover { background: var(--muted); }
+  .plan-cta.pro {
+    background: var(--low); color: var(--bg);
+  }
+  .plan-cta.pro:hover { opacity: 0.9; }
+
+  /* Detection table */
+  .detection-table {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 0;
+    margin: 32px 0;
+    overflow: hidden;
+  }
+  .detection-row {
+    display: grid; grid-template-columns: 1.5fr 2fr 0.5fr;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px; align-items: center;
+  }
+  .detection-row:last-child { border-bottom: 0; }
+  .detection-row.header {
+    font-size: 11px; color: var(--muted); letter-spacing: 0.05em; text-transform: uppercase;
+    background: var(--surface-2);
+    font-weight: 500;
+  }
+  .detection-row .family { font-weight: 500; }
+  .detection-row .what { color: var(--muted); font-size: 13px; }
+  .detection-row .count {
+    font-family: ui-monospace, monospace; color: var(--low);
+    text-align: right; font-size: 13px;
+  }
+
+  /* FAQ */
+  .faq { display: flex; flex-direction: column; gap: 0; margin-top: 32px; }
+  .faq details {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px 24px;
+    margin: 8px 0;
+  }
+  .faq summary {
+    cursor: pointer; font-size: 15px; font-weight: 500;
+    list-style: none;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .faq summary::after {
+    content: "+"; color: var(--muted); font-size: 20px; font-weight: 300;
+    transition: transform .15s;
+  }
+  .faq details[open] summary::after { transform: rotate(45deg); }
+  .faq details p {
+    margin: 14px 0 0; color: var(--muted); font-size: 14px; line-height: 1.65;
+  }
+  .faq code {
+    background: var(--bg); padding: 1px 6px; border-radius: 3px;
+    font-size: 12px; color: var(--low);
+    font-family: ui-monospace, monospace;
+  }
+
+  /* Footer */
+  footer {
+    padding: 60px 0 40px;
+    border-top: 1px solid var(--border);
+    font-size: 13px; color: var(--muted);
+  }
+  .footer-grid {
+    display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 32px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 720px) { .footer-grid { grid-template-columns: 1fr 1fr; } }
+  .footer-col__title {
+    font-size: 11px; letter-spacing: 0.05em; text-transform: uppercase;
+    color: var(--muted-2); margin: 0 0 16px; font-weight: 500;
+  }
+  .footer-col a {
+    display: block; padding: 4px 0; color: var(--muted);
+  }
+  .footer-col a:hover { color: var(--text); }
+  .footer-tagline { color: var(--muted); max-width: 280px; line-height: 1.55; margin-top: 12px; }
+  .footer-bottom {
+    border-top: 1px solid var(--border); padding-top: 24px; margin-top: 32px;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+  }
+
+  .glow {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 800px; height: 600px;
+    background: radial-gradient(circle, rgba(56,189,248,.08) 0%, transparent 70%);
+    pointer-events: none; z-index: -1;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo">
+      <img src="logos/pasteguard.png" alt="" class="logo-icon" />
+      Heedful
+    </div>
+    <div class="nav-links">
+      <a href="#how-it-works">How it works</a>
+      <a href="#try-it">Try it</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#pricing">Pricing</a>
+    </div>
+    <div style="display:inline-flex;align-items:center;gap:7px;">
+      <svg width="16" height="16" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;"><path d="M128 128L17.1 64A128 128 0 0 1 238.9 64Z" fill="#EA4335"/><path d="M128 128L238.9 64A128 128 0 0 1 128 256Z" fill="#FBBC05"/><path d="M128 128L128 256A128 128 0 0 1 17.1 64Z" fill="#34A853"/><circle cx="128" cy="128" r="72" fill="#fff"/><circle cx="128" cy="128" r="56" fill="#4285F4"/></svg>
+      <a class="nav-cta" href="#install">Install free</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ─────────────────────────── Hero ─────────────────────────── -->
+<section class="hero">
+  <div class="glow"></div>
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <span class="hero-eyebrow">
+          <span class="dot"></span>
+          100% on-device · no tracking
+        </span>
+        <h1>
+          Stop pasting <span class="accent">secrets</span> into ChatGPT &amp; other AI chats.
+        </h1>
+        <p class="hero-sub">
+          Heedful is a free Chrome extension that warns you before
+          your clipboard hits ChatGPT, Claude, Gemini, Copilot, DeepSeek,
+          Perplexity, Grok, Mistral, Poe, You.com, Character.AI or Meta AI.
+          Detection runs locally on your device. The text never leaves your browser.
+        </p>
+        <div class="cta-row">
+          <div style="display:inline-flex;align-items:center;gap:10px;">
+            <svg width="28" height="28" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;"><path d="M128 128L17.1 64A128 128 0 0 1 238.9 64Z" fill="#EA4335"/><path d="M128 128L238.9 64A128 128 0 0 1 128 256Z" fill="#FBBC05"/><path d="M128 128L128 256A128 128 0 0 1 17.1 64Z" fill="#34A853"/><circle cx="128" cy="128" r="72" fill="#fff"/><circle cx="128" cy="128" r="56" fill="#4285F4"/></svg>
+            <a class="btn btn-primary" href="#install">Install free</a>
+          </div>
+          <a class="btn btn-secondary" href="https://github.com/Matteo-Coder2/pasteguard-rules" target="_blank">
+            See detection rules →
+          </a>
+        </div>
+        <div class="trust-row">
+          <span>Free forever (core)</span>
+          <span>Open-source detection</span>
+          <span>No account needed</span>
+        </div>
+      </div>
+
+      <div class="modal-preview">
+        <div class="modal-header">
+          <div class="dot"></div>
+          <div>
+            <div class="modal-title">Sensitive data detected</div>
+            <div class="modal-subtitle">Review before pasting into ChatGPT.</div>
+          </div>
+        </div>
+        <div class="finding-row">
+          <div class="finding-dot crit"></div>
+          <div style="flex: 1;">
+            <div class="finding-label">AWS access key</div>
+            <div class="finding-snippet">AKIAIOSFODNN7EXAMPLE</div>
+            <div class="finding-actions">
+              <span>Why was this flagged?</span>
+              <span>Ignore for this session</span>
+              <span class="allow">Add to allowlist</span>
+            </div>
+          </div>
+        </div>
+        <div class="finding-row">
+          <div class="finding-dot crit"></div>
+          <div style="flex: 1;">
+            <div class="finding-label">Anthropic API key</div>
+            <div class="finding-snippet">sk-ant-api03-aBcDeFgHiJkLmNoPqRsTuVwX</div>
+            <div class="finding-actions">
+              <span>Why was this flagged?</span>
+              <span>Ignore for this session</span>
+              <span class="allow">Add to allowlist</span>
+            </div>
+          </div>
+        </div>
+        <div class="finding-row">
+          <div class="finding-dot high"></div>
+          <div style="flex: 1;">
+            <div class="finding-label">US Social Security Number</div>
+            <div class="finding-snippet">555-55-5555</div>
+            <div class="finding-actions">
+              <span>Why was this flagged?</span>
+              <span>Ignore for this session</span>
+              <span class="allow">Add to allowlist</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <div class="modal-btn">Cancel</div>
+          <div class="modal-btn redact">Redact and continue</div>
+          <div class="modal-btn">Send anyway</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── Problem ───────────────── -->
+<section class="problem-section">
+  <div class="container">
+    <div class="section-eyebrow">The problem</div>
+    <h2 class="problem-claim">
+      Cyberhaven measured <span class="problem-stat">11%</span> of ChatGPT pastes as confidential. Two years later, individual workers still have nothing.
+    </h2>
+    <p class="problem-citation">
+      Source: Cyberhaven, "What we learned from analyzing 1.6M workers' ChatGPT use," 2023. Pasted content included source code, customer records, regulated data, and confidential business material. Enterprise DLP exists, costs hundreds per seat, and itself routes the secret through a third-party cloud.
+    </p>
+  </div>
+</section>
+
+<!-- ───────────────── How it works ───────────────── -->
+<section id="how-it-works">
+  <div class="container">
+    <div class="section-eyebrow">How it works</div>
+    <h2 class="how-headline">Three detection layers.</h2>
+    <p class="how-subhead">Zero data leaves your browser.</p>
+    <p class="section-sub">
+      Heedful runs entirely inside your Chrome tab. When you paste, type, or click Send, it scans the text in milliseconds and surfaces what looks sensitive before it goes to the AI.
+    </p>
+    <div class="feature-grid">
+      <div class="feature">
+        <div class="feature-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 5H5a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h3" />
+            <path d="M16 5h3a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1h-3" />
+            <circle cx="12" cy="10" r="1.2" fill="currentColor" />
+            <circle cx="12" cy="14" r="1.2" fill="currentColor" />
+          </svg>
+        </div>
+        <h3>Regex layer, 75+ detectors</h3>
+        <ul class="feature-list">
+          <li><strong>API keys:</strong> Anthropic, OpenAI, AWS, Stripe, GitHub, npm, plus 15 more</li>
+          <li><strong>Personal info:</strong> SSN, credit card, IBAN, passport, DB connection strings</li>
+          <li><strong>International PII:</strong> 16 countries including all EU member states, UK, Canada, Australia, India, Brazil, Mexico</li>
+          <li><strong>Cryptographic:</strong> private keys, JWTs, webhook secrets</li>
+        </ul>
+        <p class="feature-foot">About 10 ms scan. Near-zero false positives.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="3" y1="6" x2="21" y2="6" />
+            <line x1="3" y1="12" x2="21" y2="12" />
+            <line x1="3" y1="18" x2="21" y2="18" />
+            <circle cx="9" cy="6" r="2.4" fill="var(--bg)" />
+            <circle cx="16" cy="12" r="2.4" fill="var(--bg)" />
+            <circle cx="7" cy="18" r="2.4" fill="var(--bg)" />
+          </svg>
+        </div>
+        <h3>Your own rules</h3>
+        <ul class="feature-list">
+          <li><strong>Healthcare:</strong> patient record numbers, NPI</li>
+          <li><strong>Legal:</strong> case numbers, client matter IDs</li>
+          <li><strong>HR:</strong> employee codes, payroll references</li>
+          <li><strong>Sales:</strong> customer account IDs, deal codes</li>
+        </ul>
+        <p class="feature-foot">Add a pattern in 30 seconds. Live tester verifies before saving.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3 L13.4 9.6 L20 11 L13.4 12.4 L12 19 L10.6 12.4 L4 11 L10.6 9.6 Z" />
+            <circle cx="19" cy="5" r="1" fill="currentColor" />
+            <circle cx="5" cy="18" r="1" fill="currentColor" />
+          </svg>
+        </div>
+        <h3>Semantic layer <span class="pro-tag">Pro</span></h3>
+        <ul class="feature-list">
+          <li><strong>Customer names</strong> mentioned in context</li>
+          <li><strong>Internal codenames</strong> (Project Falcon, Atlas, etc.)</li>
+          <li><strong>Confidential signals:</strong> pricing, salary, M&amp;A, layoffs</li>
+        </ul>
+        <p class="feature-foot">Uses Chrome's built-in Gemini Nano AI. Runs on your laptop.</p>
+      </div>
+    </div>
+
+    <!-- Sites: flat row, no cards. Eliminates one of five repeated card grids. -->
+    <div style="margin-top: 64px;">
+      <div class="section-eyebrow">Supported sites</div>
+      <h2 style="font-size: 28px;">Works on 12 major AI chat sites.</h2>
+      <ul class="sites-row">
+        <li>
+          <img class="sites-row__logo" src="logos/chatgpt.webp" alt="ChatGPT" loading="lazy" />
+          <div><span class="sites-row__name">ChatGPT</span><span class="sites-row__host">chatgpt.com</span></div>
+        </li>
+        <li>
+          <img class="sites-row__logo" src="logos/claude.png" alt="Claude" loading="lazy" />
+          <div><span class="sites-row__name">Claude</span><span class="sites-row__host">claude.ai</span></div>
+        </li>
+        <li>
+          <img class="sites-row__logo" src="logos/gemini.webp" alt="Gemini" loading="lazy" />
+          <div><span class="sites-row__name">Gemini</span><span class="sites-row__host">gemini.google.com</span></div>
+        </li>
+        <li>
+          <img class="sites-row__logo" src="logos/copilot.png" alt="Microsoft Copilot" loading="lazy" />
+          <div><span class="sites-row__name">Microsoft Copilot</span><span class="sites-row__host">copilot.microsoft.com</span></div>
+        </li>
+        <li>
+          <img class="sites-row__logo" src="logos/Deepseek.png" alt="DeepSeek" loading="lazy" />
+          <div><span class="sites-row__name">DeepSeek</span><span class="sites-row__host">chat.deepseek.com</span></div>
+        </li>
+        <li>
+          <img class="sites-row__logo" src="logos/perplexity.webp" alt="Perplexity" loading="lazy" />
+          <div><span class="sites-row__name">Perplexity</span><span class="sites-row__host">perplexity.ai</span></div>
+        </li>
+        <li>
+          <img class="sites-row__logo" src="logos/grok.png" alt="Grok" loading="lazy" />
+          <div><span class="sites-row__name">Grok</span><span class="sites-row__host">grok.com, x.com/i/grok</span></div>
+        </li>
+        <li>
+          <img class="sites-row__logo" src="logos/mistral.png" alt="Mistral Le Chat" loading="lazy" />
+          <div><span class="sites-row__name">Mistral Le Chat</span><span class="sites-row__host">chat.mistral.ai</span></div>
+        </li>
+        <li>
+          <img class="sites-row__logo" src="logos/poe.png" alt="Poe" loading="lazy" />
+          <div><span class="sites-row__name">Poe</span><span class="sites-row__host">poe.com</span></div>
+        </li>
+        <li>
+          <img class="sites-row__logo" src="logos/youcom.png" alt="You.com" loading="lazy" />
+          <div><span class="sites-row__name">You.com</span><span class="sites-row__host">you.com</span></div>
+        </li>
+        <li>
+          <img class="sites-row__logo" src="logos/characterai.png" alt="Character.AI" loading="lazy" />
+          <div><span class="sites-row__name">Character.AI</span><span class="sites-row__host">character.ai</span></div>
+        </li>
+        <li>
+          <img class="sites-row__logo" src="logos/metaai.png" alt="Meta AI" loading="lazy" />
+          <div><span class="sites-row__name">Meta AI</span><span class="sites-row__host">meta.ai</span></div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Detection breakdown -->
+    <div style="margin-top: 80px;">
+      <div class="section-eyebrow">Detection coverage</div>
+      <h2 style="font-size: 28px;">75+ detectors out of the box.</h2>
+      <div class="detection-table">
+        <div class="detection-row header">
+          <span>Family</span>
+          <span>What it catches</span>
+          <span>Count</span>
+        </div>
+        <div class="detection-row">
+          <span class="family">AI vendor keys</span>
+          <span class="what">Anthropic, OpenAI (legacy/proj/svc), Google AI, HF, Replicate, Groq, Perplexity, OpenRouter</span>
+          <span class="count">10</span>
+        </div>
+        <div class="detection-row">
+          <span class="family">Cloud / infrastructure</span>
+          <span class="what">AWS access &amp; secret keys, PEM private keys, DB connection strings, Google service accounts</span>
+          <span class="count">5</span>
+        </div>
+        <div class="detection-row">
+          <span class="family">SaaS / developer tokens</span>
+          <span class="what">Stripe key &amp; webhook, GitHub PAT &amp; fine-grained, Slack, npm, JWT</span>
+          <span class="count">7</span>
+        </div>
+        <div class="detection-row">
+          <span class="family">Identity &amp; financial PII</span>
+          <span class="what">US SSN (formatted + context-aware), credit card (Luhn-validated), IBAN, US passport, EIN, ITIN</span>
+          <span class="count">6</span>
+        </div>
+        <div class="detection-row">
+          <span class="family">International PII</span>
+          <span class="what">UK, Italy, Spain, Germany, France, Netherlands, Belgium, Portugal, Sweden, Switzerland, Brazil, Canada, Australia, India, Mexico — national IDs, tax numbers, bank accounts, health identifiers</span>
+          <span class="count">47</span>
+        </div>
+        <div class="detection-row">
+          <span class="family">Generic + custom</span>
+          <span class="what">High-entropy heuristic, custom user-defined regex patterns</span>
+          <span class="count">∞</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── Try it yourself (interactive demo) ───────────────── -->
+<section id="try-it" class="try-section">
+  <div class="container">
+    <div class="section-eyebrow">Try it yourself</div>
+    <h2 class="how-headline">Paste something below.</h2>
+    <p class="how-subhead">Detection runs right here on this page.</p>
+    <p class="section-sub">
+      Same detector as the extension. Same modal. Same masking. The text you type never leaves this tab, just like in the real product. Click a sample or type your own.
+    </p>
+
+    <div class="try-layout">
+      <div class="try-composer">
+        <div class="try-composer__label">Sample inputs</div>
+        <div class="try-chips">
+          <button type="button" class="try-chip" data-sample="export AWS_KEY=AKIAIOSFODNN7EXAMPLE">AWS access key</button>
+          <button type="button" class="try-chip" data-sample="Authorization: Bearer sk-ant-api03-aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890aBcDeFgHiJkLmNoPqRsTuVwXyZ123456789012345">Anthropic key</button>
+          <button type="button" class="try-chip" data-sample="charge_token = sk_live_EXAMPLEEXAMPLEEXAMPLEXX">Stripe key</button>
+          <button type="button" class="try-chip" data-sample="my GitHub PAT: ghp_aBcDeFgHiJkLmNoPqRsTuVwXyZ1234567890XX">GitHub token</button>
+          <button type="button" class="try-chip" data-sample="Customer SSN: 555-55-5555, please review">US SSN</button>
+          <button type="button" class="try-chip" data-sample="card on file: 4111 1111 1111 1111 expiring 12/30">Credit card</button>
+          <button type="button" class="try-chip" data-sample="jwt=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NSJ9.dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk">JSON Web Token</button>
+          <button type="button" class="try-chip" data-sample="-----BEGIN RSA PRIVATE KEY-----&#10;MIIEpAIBAAKCAQEA1Tj2W3Xz5y9Q4...&#10;-----END RSA PRIVATE KEY-----">Private key</button>
+        </div>
+
+        <div class="try-composer__label" style="margin-top: 28px;">Or type / paste your own</div>
+        <textarea
+          id="try-input"
+          class="try-input"
+          rows="6"
+          placeholder="Paste something here. We'll only check it locally."
+          spellcheck="false"
+        ></textarea>
+        <div class="try-meta">
+          <span id="try-stats">0 characters · 0 findings</span>
+          <button type="button" id="try-clear" class="try-clear">Clear</button>
+        </div>
+      </div>
+
+      <div class="try-modal-wrap">
+        <div class="modal-preview try-modal" id="try-modal">
+          <div class="modal-header">
+            <div class="dot"></div>
+            <div>
+              <div class="modal-title" id="try-title">Detection results</div>
+              <div class="modal-subtitle" id="try-subtitle">Click a sample or type to begin.</div>
+            </div>
+          </div>
+          <div id="try-findings" class="try-findings">
+            <div class="try-empty">
+              No findings yet. <br />Try one of the samples on the left.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <div class="modal-btn">Cancel</div>
+            <div class="modal-btn redact">Redact and continue</div>
+            <div class="modal-btn">Send anyway</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── Privacy section ───────────────── -->
+<section id="privacy" style="background: var(--surface);">
+  <div class="container">
+    <div class="section-eyebrow">Privacy stance</div>
+    <h2>The privacy story is the product.</h2>
+    <p class="section-sub">
+      Most "DLP for AI" tools route your text through their own cloud to
+      classify it. Which means your secret is now in two places instead of one.
+      Heedful runs everything on your device. We can't see your text. We don't want to.
+    </p>
+    <div class="privacy-claim">
+      <div class="privacy-claim__eyebrow">Verified at build time</div>
+      <h3 class="privacy-claim__title">
+        Zero outbound network calls from Heedful's code.
+      </h3>
+    </div>
+
+    <dl class="privacy-list">
+      <div class="privacy-list__item">
+        <dt>No tracking</dt>
+        <dd>No analytics, no error reports, no usage data. We have no way of knowing you installed it.</dd>
+      </div>
+      <div class="privacy-list__item">
+        <dt>No cloud classifier</dt>
+        <dd>The 75+ detectors are regex. The semantic layer uses Chrome's local Gemini Nano. Nothing crosses the network.</dd>
+      </div>
+      <div class="privacy-list__item">
+        <dt>No account required</dt>
+        <dd>Install. Use. Done. No sign-up wall, no email, no tracking pixel.</dd>
+      </div>
+      <div class="privacy-list__item">
+        <dt>Open-source detection rules</dt>
+        <dd>Every regex pattern and every semantic prompt is published on GitHub. Audit yourself.</dd>
+      </div>
+      <div class="privacy-list__item">
+        <dt>Audit log stays local</dt>
+        <dd>The "N pastes scanned" counter lives in <code class="inline-code">chrome.storage.local</code>. It stores counts only, never the text.</dd>
+      </div>
+      <div class="privacy-list__item">
+        <dt>Uninstall = clean slate</dt>
+        <dd>Remove the extension and every byte we stored goes with it. Chrome handles cleanup automatically.</dd>
+      </div>
+    </dl>
+  </div>
+</section>
+
+<!-- ───── Second preview: not-just-secrets. Broadens beyond developers ───── -->
+<section class="second-preview">
+  <div class="container">
+    <div class="second-preview__layout">
+      <div>
+        <div class="section-eyebrow">Not just keys</div>
+        <h2 style="font-size: clamp(28px, 4vw, 40px); margin: 0 0 16px;">
+          Customer records, internal codenames, salary references.
+        </h2>
+        <p style="font-size: 17px; color: var(--muted); line-height: 1.55; max-width: 460px; margin: 0 0 24px;">
+          If you work in customer success, legal, HR, or finance, your sensitive data isn't an API key. It's a name, a case number, a comp band, a deal codename. Heedful catches those too.
+        </p>
+        <ul class="second-preview__bullets">
+          <li>Custom regex for industry-specific IDs (MRN, case number, employee code)</li>
+          <li>Allowlist legitimate customer names you reference often</li>
+          <li>Semantic layer flags codenames and confidential signals (Pro)</li>
+        </ul>
+      </div>
+
+      <div class="modal-preview modal-preview--compact">
+        <div class="modal-header">
+          <div class="dot"></div>
+          <div>
+            <div class="modal-title">Sensitive data detected</div>
+            <div class="modal-subtitle">Review before pasting into Claude.</div>
+          </div>
+        </div>
+        <div class="example-context">
+          You typed: "Help me write a follow-up email to Sarah Chen at Globex Industries (account #GBX-4521). She mentioned the Project Atlas pricing of $89k/seat. Compensation review for her team is set at $145k base + 0.3% equity."
+        </div>
+        <div class="finding-row">
+          <div class="finding-dot high"></div>
+          <div style="flex: 1;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div class="finding-label">Customer record</div>
+              <div class="modal-btn redact" style="font-size:11px;padding:3px 10px;white-space:nowrap;flex-shrink:0;">Redact</div>
+            </div>
+            <div class="finding-snippet">"Sarah Chen at Globex Industries (account #GBX-4521)"</div>
+            <div class="finding-actions">
+              <span>Why?</span>
+              <span>Ignore for this session</span>
+            </div>
+          </div>
+        </div>
+        <div class="finding-row">
+          <div class="finding-dot med"></div>
+          <div style="flex: 1;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div class="finding-label">Internal codename + pricing</div>
+              <div class="modal-btn redact" style="font-size:11px;padding:3px 10px;white-space:nowrap;flex-shrink:0;">Redact</div>
+            </div>
+            <div class="finding-snippet">"Project Atlas pricing of $89k/seat"</div>
+            <div class="finding-actions">
+              <span>Why?</span>
+              <span>Ignore for this session</span>
+            </div>
+          </div>
+        </div>
+        <div class="finding-row">
+          <div class="finding-dot high"></div>
+          <div style="flex: 1;">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+              <div class="finding-label">Compensation reference</div>
+              <div class="modal-btn redact" style="font-size:11px;padding:3px 10px;white-space:nowrap;flex-shrink:0;">Redact</div>
+            </div>
+            <div class="finding-snippet">"$145k base + 0.3% equity"</div>
+            <div class="finding-actions">
+              <span>Why?</span>
+              <span>Ignore for this session</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <div class="modal-btn">Cancel</div>
+          <div class="modal-btn">Redact and continue</div>
+          <div class="modal-btn">Send anyway</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── Pricing ───────────────── -->
+<section id="pricing">
+  <div class="container">
+    <div class="section-eyebrow">Pricing</div>
+    <h2>Free forever for the basics. Pro for the rest.</h2>
+    <p class="section-sub">
+      The core product, modal warnings on every site with the most common secret types, is free. Always will be. Pro adds the modern AI-vendor keys and the semantic layer.
+    </p>
+
+    <div class="billing-toggle" role="radiogroup" aria-label="Billing period">
+      <button type="button" class="billing-toggle__option is-active" data-period="monthly" role="radio" aria-checked="true">Monthly</button>
+      <button type="button" class="billing-toggle__option" data-period="annual" role="radio" aria-checked="false">
+        Annual
+        <span class="billing-toggle__save">save 35%</span>
+      </button>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="plan">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">
+          <span class="currency">$</span>0
+          <span class="period">forever</span>
+        </div>
+        <p class="plan-tagline">Everything you need to stop the obvious leaks.</p>
+        <ul class="plan-features">
+          <li>All 12 AI chat sites supported</li>
+          <li>75+ detectors: secrets, US PII, and international PII across 16 countries</li>
+          <li>Industry compliance presets: HIPAA, PCI DSS, SOC2, GDPR, Financial, Legal</li>
+          <li>File scanning: check text, PDF and Word documents before uploading</li>
+          <li>5 custom regex rules</li>
+          <li>10 allowlist entries</li>
+          <li>Balanced sensitivity profile</li>
+          <li>Modal with Cancel / Redact / Send anyway + per-finding Ignore + Add to allowlist</li>
+          <li>7-day rolling audit log (counts only)</li>
+        </ul>
+        <a class="plan-cta free" href="#install">Install free</a>
+      </div>
+      <div class="plan pro">
+        <span class="plan-badge">Most popular</span>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">
+          <span class="currency">$</span><span data-price-monthly>4.99</span><span data-price-annual style="display:none">39</span>
+          <span class="period"><span data-period-monthly>/ month</span><span data-period-annual style="display:none">/ year</span></span>
+        </div>
+        <p class="plan-tagline">Built for developers and AI-power-users.</p>
+        <ul class="plan-features">
+          <li>Everything in Free</li>
+          <li class="pro-only">7 modern AI vendor key detectors (Anthropic, OpenAI, Google AI, Hugging Face, Replicate, Groq, Perplexity, OpenRouter)</li>
+          <li class="pro-only">Semantic layer: Gemini Nano detects customer names, codenames, confidential signals</li>
+          <li class="pro-only">Unlimited custom regex rules + allowlist</li>
+          <li class="pro-only">Loose + Strict sensitivity profiles</li>
+          <li class="pro-only">Full audit log viewer + CSV export</li>
+          <li class="pro-only">Settings export / import + pause-for-1-hour</li>
+          <li class="pro-only">Priority email support</li>
+        </ul>
+        <a class="plan-cta pro" href="#install">Install &amp; upgrade</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Waitlist section removed; merged into final CTA below to avoid two
+     waitlists and to fix the peak-end-rule violation. -->
+
+<!-- ───────────────── FAQ ───────────────── -->
+<section style="background: var(--surface);">
+  <div class="container">
+    <div class="section-eyebrow">FAQ</div>
+    <h2>Questions worth asking before you install.</h2>
+    <div class="faq">
+      <details>
+        <summary>How do I verify nothing actually leaves my browser?</summary>
+        <p>
+          Open Chrome DevTools → Network tab → filter by the extension ID. Paste anything sensitive. You'll see zero outbound requests. Our manifest declares no <code>host_permissions</code> for any remote origin. Only the 12 AI chat sites the content script runs on, and we never send their contents anywhere. The detection rules are published at <a href="https://github.com/Matteo-Coder2/pasteguard-rules" target="_blank" style="color: var(--low);">github.com/Matteo-Coder2/pasteguard-rules</a> so you can audit exactly what we look for.
+        </p>
+      </details>
+
+      <details>
+        <summary>Will this slow Chrome down or break ChatGPT?</summary>
+        <p>
+          Cold-start payload is 44 KB (14 KB gzipped). Detection runs in under 20 ms on a typical paste. The modal's React tree only loads when a finding actually triggers. Most pastes pay zero cost. We hook the paste event at the document level (not site-specific selectors), so when ChatGPT redesigns their UI, Heedful keeps working.
+        </p>
+      </details>
+
+      <details>
+        <summary>It's free. What's the catch?</summary>
+        <p>
+          The core (75+ detectors, all 12 sites, industry presets, file scanning) is free forever. Not a 14-day trial. We make money from Pro ($4.99/mo) which adds the on-device semantic layer, unlimited custom rules, and priority support. We literally cannot sell your data because nothing leaves your device. No tracking, no analytics, no account required. Full stop.
+        </p>
+      </details>
+
+      <details>
+        <summary>Why not just use Cyberhaven, Nightfall, or another DLP?</summary>
+        <p>
+          Those are enterprise tools sold with annual contracts. Most importantly: they're <em>cloud</em> DLP. To classify your text they route it to their servers, which means your secret is now in two places instead of one. Heedful is on-device, no contract, designed for the individual worker without a corporate IT department. We're not the right tool for SOC2-compliant orgs; for everyone else we're more truthful about the privacy model.
+        </p>
+      </details>
+
+      <details>
+        <summary>What about files, images, drag-and-drop, and voice input?</summary>
+        <p>
+          Heedful intercepts paste, typed-text-then-Enter, and Send-button clicks. It also scans text, PDF and Word files you drop onto the Scan page before uploading. If you drag a screenshot of a customer dashboard into ChatGPT, we don't scan the image. If you dictate a customer name via voice, we never see it. We're a smart safety net for keyboard, clipboard and document input. Not a full compliance product. Combine with judgment.
+        </p>
+      </details>
+
+      <details>
+        <summary>I work in a regulated industry. Will it catch my specific identifiers?</summary>
+        <p>
+          Out of the box, the 75+ built-in detectors cover secrets, US PII, and national identifiers across 16 countries. Six industry presets (HIPAA, PCI DSS, SOC2, GDPR, Financial, Legal) let you turn on the right detectors for your regulatory context in one click. For identifiers specific to your organisation, add a custom regex rule in Options — the live tester verifies it before saving. Heedful is a personal safety net, not a compliance certification.
+        </p>
+      </details>
+
+      <details>
+        <summary>Why does it need permission for x.com?</summary>
+        <p>
+          Grok opens as a sidebar inside x.com that can appear on any URL (a tweet, a profile, the timeline). To protect that sidebar, the content script has to load on every x.com page. But the actual scanning is gated to composers with Grok-specific markers. Tweet drafts and reply boxes are explicitly ignored. We never read their contents. The full caveat is in our <a href="https://github.com/Matteo-Coder2/pasteguard-rules/blob/main/PRIVACY.md" target="_blank" style="color: var(--low);">privacy policy</a>.
+        </p>
+      </details>
+
+      <details>
+        <summary>What if I paste the same customer name 50 times a day?</summary>
+        <p>
+          Click <strong>"Add to allowlist"</strong> on the row once. We won't flag that exact text again on any site. Or click <strong>"Ignore for this session"</strong> for a one-tab pass. There's no nag, Pro is mentioned once in the Options page and never interrupts a paste flow.
+        </p>
+      </details>
+
+      <details>
+        <summary>Does the semantic layer work on every computer?</summary>
+        <p>
+          It requires Chrome 138+ and either a discrete GPU with more than 4 GB VRAM, or 16+ GB of RAM with a modern CPU. About 22 GB of free disk is also needed for Chrome's local AI model. On unsupported hardware, the 25 regex detectors still work. Only the AI-based detectors (customer name, codename, confidential signal) degrade. The extension is honest about which detectors are unavailable on your machine.
+        </p>
+      </details>
+
+      <details>
+        <summary>What happens if Heedful gets acquired or shut down?</summary>
+        <p>
+          The detection rules are MIT-licensed and live in a public GitHub repo. They survive us. The extension binary lives on Chrome Web Store and stops getting updates if we abandon it; you can still use the last-published version. We have no plans to sell to a data-mining company; if that ever changes, the rules repo is the fork-friendly escape hatch.
+        </p>
+      </details>
+
+      <details>
+        <summary>Can my employer or IT detect that I have this installed?</summary>
+        <p>
+          Yes. Managed Chrome installations can list installed extensions by ID. We don't hide. If your organization has an extension allowlist and Heedful isn't on it, ask IT to add the extension ID. We're not designed for stealth use against employer policy.
+        </p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── Final CTA ───────────────── -->
+<section id="install">
+  <div class="container" style="text-align: center; max-width: 640px;">
+    <h2 style="font-size: 48px; margin-bottom: 16px;">Install Heedful.</h2>
+    <p class="section-sub" style="margin: 0 auto 32px; max-width: 480px;">
+      Free forever for the core. Pro adds Gemini Nano semantic detection,
+      unlimited custom rules, and priority support.
+    </p>
+    <div style="display:inline-flex;align-items:center;gap:12px;">
+      <svg width="32" height="32" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;"><path d="M128 128L17.1 64A128 128 0 0 1 238.9 64Z" fill="#EA4335"/><path d="M128 128L238.9 64A128 128 0 0 1 128 256Z" fill="#FBBC05"/><path d="M128 128L128 256A128 128 0 0 1 17.1 64Z" fill="#34A853"/><circle cx="128" cy="128" r="72" fill="#fff"/><circle cx="128" cy="128" r="56" fill="#4285F4"/></svg>
+      <a class="btn btn-primary" id="install-cta" href="#install"
+         style="font-size: 17px; padding: 14px 32px;">
+        Add to Chrome — free
+      </a>
+    </div>
+    <div style="margin-top: 20px; font-size: 12px; color: var(--muted-2);">
+      No account required.
+    </div>
+  </div>
+</section>
+
+<!-- ───────────────── Footer ───────────────── -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-col">
+        <div class="logo" style="font-size: 16px; margin-bottom: 12px;">
+          <img src="logos/pasteguard.png" alt="" class="logo-icon" />
+          Heedful
+        </div>
+        <p class="footer-tagline">
+          A safety net for the moment you paste into AI. On-device.
+          Open-source rules. No tracking.
+        </p>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col__title">Product</div>
+        <a href="#how-it-works">How it works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#install">Install</a>
+        <a href="/privacy">Privacy policy</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col__title">Open source</div>
+        <a href="https://github.com/Matteo-Coder2/pasteguard-rules" target="_blank">Detection rules</a>
+        <a href="/privacy">Privacy policy</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col__title">Connect</div>
+        <a href="/support">Support</a>
+        <a href="mailto:hello@heedful.app">hello@heedful.app</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2026 Heedful.</div>
+      <div>Made for individual knowledge workers without enterprise DLP.</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Install URL — single source of truth. Until Chrome Web Store approves
+  // the extension and assigns an ID, this is empty. After approval, set
+  // this to "https://chromewebstore.google.com/detail/pasteguard/<id>"
+  // and every install/upgrade button across the site auto-retargets.
+  const INSTALL_URL = "https://chromewebstore.google.com/detail/eemkggajojahcpbnmgbnibgoobapfgck?utm_source=item-share-cb";
+  if (INSTALL_URL) {
+    document.querySelectorAll('a[href="#install"]').forEach((a) => {
+      a.href = INSTALL_URL;
+      a.target = "_blank";
+      a.rel = "noopener";
+    });
+  } else {
+    // Pre-approval: the dedicated install-CTA button at the bottom should
+    // visibly read "pending review" instead of looking like a working
+    // button that scrolls to itself. Other "#install" links (nav, hero,
+    // pricing) keep scrolling to this section, which is fine — they read
+    // as "see install info below."
+    const cta = document.getElementById("install-cta");
+    if (cta) {
+      cta.textContent = "Submitted to Chrome Web Store — coming soon";
+      cta.style.opacity = "0.65";
+      cta.style.cursor = "default";
+      cta.addEventListener("click", (e) => e.preventDefault());
+    }
+  }
+
+  // Interactive try-it demo: real detection, in-browser
+  (function () {
+    const input = document.getElementById('try-input');
+    if (!input) return;
+    const findingsEl = document.getElementById('try-findings');
+    const subtitle = document.getElementById('try-subtitle');
+    const stats = document.getElementById('try-stats');
+    const chips = document.querySelectorAll('.try-chip');
+    const clearBtn = document.getElementById('try-clear');
+
+    // On touch devices, focusing the textarea pops up the soft keyboard,
+    // which buries the detection results and makes the demo unusable on
+    // mobile. The chips drive the content anyway — readonly is the
+    // correct UX for touch. Detect via `pointer: coarse` rather than
+    // viewport width so the heuristic catches tablets too.
+    const isTouch = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+    if (isTouch) {
+      input.readOnly = true;
+      input.placeholder = "Tap a sample above to test detection.";
+    }
+
+    const DETECTORS = [
+      { id: 'aws-access-key', label: 'AWS access key', sev: 'crit',
+        re: /\b(?:AKIA|ASIA|AGPA|AROA|AIPA|ANPA|ABIA|ACCA)[A-Z0-9]{16}\b/g },
+      { id: 'anthropic-key', label: 'Anthropic API key', sev: 'crit',
+        re: /\bsk-ant-(?:api|admin)\d{2}-[A-Za-z0-9_-]{20,}\b/g },
+      { id: 'openai-key', label: 'OpenAI API key', sev: 'crit',
+        re: /\bsk-(?:proj|svcacct|admin)-[A-Za-z0-9_-]{20,}\b|\bsk-[A-Za-z0-9]{48}\b/g },
+      { id: 'stripe-key', label: 'Stripe API key', sev: 'crit',
+        re: /\b(?:sk|pk|rk)_(?:live|test)_[A-Za-z0-9]{16,}\b/g },
+      { id: 'github-token', label: 'GitHub token', sev: 'crit',
+        re: /\bgh[opsur]_[A-Za-z0-9]{20,}\b|\bgithub_pat_[A-Z0-9_]{20,}\b/g },
+      { id: 'private-key-pem', label: 'Private key (PEM)', sev: 'crit',
+        re: /-----BEGIN (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |OPENSSH |ENCRYPTED )?PRIVATE KEY-----/g },
+      { id: 'jwt', label: 'JSON Web Token', sev: 'high',
+        re: /\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g },
+      { id: 'ssn', label: 'US Social Security Number', sev: 'high',
+        re: /\b(?!000)\d{3}[- ]\d{2}[- ]\d{4}\b/g },
+      { id: 'credit-card', label: 'Credit card number', sev: 'high',
+        re: /\b(?:\d[ -]?){12,18}\d\b/g, validate: luhnValidate },
+      { id: 'slack-token', label: 'Slack token', sev: 'high',
+        re: /\bxox[abpsr]-\d+-\d+-[A-Za-z0-9-]+\b/g },
+    ];
+
+    function luhnValidate(match) {
+      const digits = match.replace(/[ -]/g, '');
+      if (digits.length < 13 || digits.length > 19) return false;
+      let sum = 0, alt = false;
+      for (let i = digits.length - 1; i >= 0; i -= 1) {
+        let d = digits.charCodeAt(i) - 48;
+        if (alt) { d *= 2; if (d > 9) d -= 9; }
+        sum += d;
+        alt = !alt;
+      }
+      return sum % 10 === 0;
+    }
+
+    function detect(text) {
+      const findings = [];
+      for (const det of DETECTORS) {
+        const matches = text.matchAll(det.re);
+        for (const m of matches) {
+          if (det.validate && !det.validate(m[0])) continue;
+          findings.push({ label: det.label, sev: det.sev, snippet: m[0] });
+        }
+      }
+      return findings;
+    }
+
+    function render() {
+      const text = input.value;
+      const findings = text ? detect(text) : [];
+      stats.textContent = text.length + ' character' + (text.length === 1 ? '' : 's') +
+        ' · ' + findings.length + ' finding' + (findings.length === 1 ? '' : 's');
+
+      if (text.length === 0) {
+        subtitle.textContent = 'Click a sample or type to begin.';
+        findingsEl.innerHTML = '<div class="try-empty">No findings yet. <br />Try one of the samples on the left.</div>';
+        return;
+      }
+      if (findings.length === 0) {
+        subtitle.textContent = 'Nothing flagged. Paste would go through normally.';
+        findingsEl.innerHTML = '<div class="try-empty">Clean. Nothing in this text matches any of our 75+ detectors.</div>';
+        return;
+      }
+      subtitle.textContent = 'Review before pasting into ChatGPT.';
+      findingsEl.innerHTML = findings.map((f) => (
+        '<div class="finding-row">' +
+          '<div class="finding-dot ' + f.sev + '"></div>' +
+          '<div style="flex: 1; min-width: 0;">' +
+            '<div class="finding-label">' + escapeHtml(f.label) + '</div>' +
+            '<div class="finding-snippet">' + escapeHtml(f.snippet.length > 60 ? f.snippet.slice(0, 60) + '...' : f.snippet) + '</div>' +
+            '<div class="finding-actions">' +
+              '<span>Why was this flagged?</span>' +
+              '<span>Ignore for this session</span>' +
+              '<span class="allow">Add to allowlist</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>'
+      )).join('');
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    }
+
+    chips.forEach((chip) => {
+      chip.addEventListener('click', () => {
+        chips.forEach((c) => c.classList.remove('is-active'));
+        chip.classList.add('is-active');
+        input.value = chip.dataset.sample.replace(/&#10;/g, '\n');
+        render();
+        input.focus();
+      });
+    });
+
+    input.addEventListener('input', () => {
+      chips.forEach((c) => c.classList.remove('is-active'));
+      render();
+    });
+
+    clearBtn.addEventListener('click', () => {
+      input.value = '';
+      chips.forEach((c) => c.classList.remove('is-active'));
+      input.focus();
+      render();
+    });
+
+    render();
+  })();
+
+  // Billing toggle
+  (function () {
+    const opts = document.querySelectorAll('.billing-toggle__option');
+    const monthlyEls = document.querySelectorAll('[data-price-monthly], [data-period-monthly]');
+    const annualEls = document.querySelectorAll('[data-price-annual], [data-period-annual]');
+    opts.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const period = btn.dataset.period;
+        opts.forEach((o) => {
+          const active = o === btn;
+          o.classList.toggle('is-active', active);
+          o.setAttribute('aria-checked', active ? 'true' : 'false');
+        });
+        const showAnnual = period === 'annual';
+        monthlyEls.forEach((el) => { el.style.display = showAnnual ? 'none' : ''; });
+        annualEls.forEach((el) => { el.style.display = showAnnual ? '' : 'none'; });
+      });
+    });
+  })();
+
+</script>
+
+</body>
+</html>

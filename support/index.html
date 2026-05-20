@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Support — Heedful</title>
+<meta name="description" content="Get help with Heedful. Contact support, report bugs, or browse common questions about installing, using, and configuring the extension." />
+<meta property="og:title" content="Heedful Support" />
+<meta property="og:description" content="Get help with the on-device DLP extension for AI chats." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://heedful.app/support" />
+<meta property="og:image" content="https://heedful.app/og-image.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Heedful — On-device DLP for AI chats" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Heedful Support" />
+<meta name="twitter:description" content="Get help with the on-device DLP extension for AI chats." />
+<meta name="twitter:image" content="https://heedful.app/og-image.png" />
+<link rel="canonical" href="https://heedful.app/support" />
+<style>
+  :root {
+    --bg: #0d0d0f;
+    --surface: #161618;
+    --surface-2: #1f1f23;
+    --border: #2a2a30;
+    --text: #f5f5f7;
+    --muted: #a0a0a8;
+    --muted-2: #6a6a72;
+    --low: #38bdf8;
+    --good: #4ade80;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+  html { -webkit-text-size-adjust: 100%; width: 100%; }
+  body {
+    font: 16px/1.7 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    width: 100%;
+    overflow-x: hidden;
+  }
+  a { color: var(--low); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Nav (same as landing/privacy) */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(13, 13, 15, 0.85); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner {
+    max-width: 1100px; margin: 0 auto; padding: 14px 28px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo {
+    font-weight: 600; font-size: 16px; letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 8px;
+    color: var(--text);
+  }
+  .logo-icon {
+    width: 26px; height: 26px;
+    display: block;
+    filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.35));
+  }
+  .nav-links {
+    display: flex; gap: 24px; font-size: 13px; color: var(--muted);
+  }
+  .nav-links a { color: var(--muted); }
+  .nav-links a:hover { color: var(--text); text-decoration: none; }
+  .nav-cta {
+    background: var(--text); color: var(--bg);
+    padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+    transition: background .15s;
+  }
+  .nav-cta:hover { background: var(--muted); text-decoration: none; }
+
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 64px 28px 96px;
+  }
+
+  .doc-header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 28px;
+    margin-bottom: 40px;
+  }
+  .doc-header h1 {
+    font-size: 36px; line-height: 1.15; margin: 0 0 8px;
+    letter-spacing: -0.02em; font-weight: 700;
+  }
+  .doc-header p {
+    color: var(--muted); margin: 0; font-size: 16px;
+  }
+
+  /* Contact cards */
+  .contact-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+    margin: 24px 0 56px;
+  }
+  @media (max-width: 600px) { .contact-grid { grid-template-columns: 1fr; } }
+  .contact-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    transition: border-color .15s, background .15s;
+  }
+  .contact-card:hover { border-color: var(--low); background: var(--surface-2); }
+  .contact-card .label {
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--low); font-weight: 600; margin-bottom: 8px;
+  }
+  .contact-card h3 {
+    margin: 0 0 6px; font-size: 18px; color: var(--text);
+  }
+  .contact-card p {
+    margin: 0 0 12px; color: var(--muted); font-size: 14px; line-height: 1.55;
+  }
+  .contact-card a.cta {
+    color: var(--text); font-weight: 500; font-size: 14px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .contact-card a.cta:hover { color: var(--low); text-decoration: none; }
+
+  h2 {
+    font-size: 22px; font-weight: 600;
+    margin: 56px 0 12px;
+    letter-spacing: -0.01em;
+  }
+  p, li {
+    color: var(--muted);
+    font-size: 15.5px;
+  }
+  ul, ol {
+    padding-left: 22px;
+  }
+  ul li, ol li {
+    margin: 6px 0;
+  }
+  strong, b {
+    color: var(--text); font-weight: 600;
+  }
+  code {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color: var(--text);
+  }
+
+  /* FAQ */
+  details {
+    border-top: 1px solid var(--border);
+    padding: 18px 0;
+  }
+  details:last-of-type { border-bottom: 1px solid var(--border); }
+  details summary {
+    cursor: pointer;
+    font-weight: 500; color: var(--text);
+    list-style: none;
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 15.5px;
+  }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::after {
+    content: "+"; color: var(--muted); font-size: 20px; line-height: 1;
+    transition: transform .2s;
+  }
+  details[open] summary::after { content: "−"; }
+  details .answer { margin-top: 12px; }
+  details .answer p { margin: 0 0 8px; }
+  details .answer p:last-child { margin-bottom: 0; }
+
+  /* Footer */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 28px;
+    color: var(--muted-2);
+    font-size: 13px;
+  }
+  .footer-inner {
+    max-width: 1100px; margin: 0 auto;
+    display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+  }
+
+  @media (max-width: 720px) {
+    .nav-links { display: none; }
+    .doc-header h1 { font-size: 28px; }
+    main { padding: 40px 24px 64px; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="logo" href="/">
+      <img src="/logos/pasteguard.png" alt="" class="logo-icon" />
+      Heedful
+    </a>
+    <div class="nav-links">
+      <a href="/#how-it-works">How it works</a>
+      <a href="/#try-it">Try it</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/#pricing">Pricing</a>
+    </div>
+    <a class="nav-cta" href="/#install">Install free</a>
+  </div>
+</nav>
+
+<main>
+  <header class="doc-header">
+    <h1>Support</h1>
+    <p>Get help with Heedful. Most questions are answered below.</p>
+  </header>
+
+  <div class="contact-grid">
+    <div class="contact-card">
+      <div class="label">Email</div>
+      <h3>Quick questions</h3>
+      <p>Bug reports, feature requests, billing questions, or anything that needs a private reply.</p>
+      <a class="cta" href="mailto:support@heedful.app">support@heedful.app →</a>
+    </div>
+    <div class="contact-card">
+      <div class="label">GitHub Issues</div>
+      <h3>Public bug reports</h3>
+      <p>Reproducible bugs, detection false-positives or false-negatives, and feature requests visible to other users.</p>
+      <a class="cta" href="https://github.com/Matteo-Coder2/pasteguard-rules/issues" target="_blank" rel="noopener">Open an issue →</a>
+    </div>
+  </div>
+
+  <h2>Common questions</h2>
+
+  <details>
+    <summary>Heedful isn't detecting anything when I paste</summary>
+    <div class="answer">
+      <p>A few things to check:</p>
+      <ul>
+        <li>Open the toolbar popup. Does it show <strong>"Active on [site]"</strong>? If it says "Paused," click <strong>Resume</strong>.</li>
+        <li>Open Options → <strong>Sites</strong>. Make sure the site you're on (e.g., ChatGPT, Claude) is toggled on.</li>
+        <li>Open Options → <strong>Detection rules</strong>. The category you expect to trigger must be enabled. Pro categories are locked on the free tier.</li>
+        <li>For X / Grok: the extension only acts when you're at <code>x.com/i/grok</code>. It silently ignores tweet drafts, reply boxes, and DMs.</li>
+      </ul>
+    </div>
+  </details>
+
+  <details>
+    <summary>I'm getting a false positive — how do I stop a detector from flagging?</summary>
+    <div class="answer">
+      <p>Two options:</p>
+      <ul>
+        <li><strong>"Ignore for this session"</strong> on the modal row — temporary; the snippet won't re-trigger until you close the tab.</li>
+        <li><strong>"Add to allowlist"</strong> — permanent. The snippet (or any snippet containing it, at least 8 chars long) is silently ignored from then on. You can review and remove allowlist entries in Options → Allowlist.</li>
+      </ul>
+      <p>If you're seeing the same false positive often and think the regex is wrong, please <a href="https://github.com/Matteo-Coder2/pasteguard-rules/issues" target="_blank" rel="noopener">open an issue</a> with the snippet redacted — improving the detector helps every user.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do I upgrade to Pro?</summary>
+    <div class="answer">
+      <p>Open the Heedful popup from the Chrome toolbar → click <strong>Upgrade to Pro</strong> → choose Monthly ($4.99/mo) or Annual ($39/yr). Checkout opens on ExtensionPay (which uses Stripe). Pro unlocks automatically once payment completes.</p>
+      <p>If you've already paid on another browser or device, click <strong>Sign in</strong> in the popup and use the email you paid with — Pro status will sync.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do I cancel Pro?</summary>
+    <div class="answer">
+      <p>Open the popup → click <strong>Manage Pro</strong> → opens the ExtensionPay customer portal where you can cancel. Your Pro features stay active through the end of the period you've paid for. No prorated refunds.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Does Heedful send my data anywhere?</summary>
+    <div class="answer">
+      <p><strong>No.</strong> Every detection happens in your browser. Heedful makes zero outbound network requests of its own. You can verify this yourself: open DevTools → Network tab on any AI chat site, paste a fake AWS key like <code>AKIAIOSFODNN7EXAMPLE</code>, watch the modal appear, and notice that the Network panel stays empty.</p>
+      <p>See the full <a href="/privacy">privacy policy</a> for details.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>"Advanced semantic detection" is greyed out / unavailable</summary>
+    <div class="answer">
+      <p>The semantic layer uses Chrome's built-in Gemini Nano model, which has hardware requirements:</p>
+      <ul>
+        <li>≥22 GB free disk space</li>
+        <li>>4 GB VRAM <strong>or</strong> ≥16 GB RAM with a 4-core CPU</li>
+        <li>Windows 10/11, macOS 13+, Linux, or ChromeOS (no Android/iOS)</li>
+        <li>Chrome 138 or later</li>
+      </ul>
+      <p>If your hardware qualifies, semantic detection should be available. First use triggers a ~2-4 GB model download. The regex layer still works on devices that can't run the model.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do I pause Heedful temporarily?</summary>
+    <div class="answer">
+      <p>Open the popup → click <strong>Pause for 1 hour</strong>. The extension will resume on its own. Useful if you're working through a stream of pastes that you know are safe and don't need the modal interrupting.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Can I add my own custom detection rules?</summary>
+    <div class="answer">
+      <p>Yes. Open Options → <strong>Custom rules</strong> → <strong>Add rule</strong>. Each rule has a name, a regex pattern, a severity level, and a flag. The live tester shows whether your pattern matches sample text before you save.</p>
+      <p>The free tier allows up to 5 custom rules. Pro is unlimited. Patterns that are likely to backtrack catastrophically (nested quantifiers, alternation with outer quantifier, etc.) are rejected at save time.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>How do I uninstall Heedful?</summary>
+    <div class="answer">
+      <p>In Chrome: right-click the Heedful toolbar icon → <strong>Remove from Chrome…</strong> Confirms. Or go to <code>chrome://extensions/</code>, find Heedful, click Remove.</p>
+      <p>Uninstalling automatically clears all locally-stored settings, audit log entries, and Pro status. Nothing is left behind on your machine or on any server (there are no servers).</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>Is the source code open?</summary>
+    <div class="answer">
+      <p>The <strong>detection rules</strong> (regex patterns + semantic prompts) are open-source at <a href="https://github.com/Matteo-Coder2/pasteguard-rules" target="_blank" rel="noopener">github.com/Matteo-Coder2/pasteguard-rules</a>. You can audit exactly what the extension looks for.</p>
+      <p>The extension code itself (popup, options, content script glue) is currently closed-source. If you want a specific assurance about a behavior, ask via support — happy to share specifics.</p>
+    </div>
+  </details>
+
+  <details>
+    <summary>I found a security issue. Where do I report it?</summary>
+    <div class="answer">
+      <p>Please email <a href="mailto:security@heedful.app">security@heedful.app</a> — a dedicated address for vulnerability disclosure. Avoid public disclosure (GitHub issues, social media) until we've had a chance to address it. We'll credit you on the fix announcement if you'd like.</p>
+    </div>
+  </details>
+
+  <h2>Still stuck?</h2>
+  <p>Email <a href="mailto:support@heedful.app">support@heedful.app</a> with:</p>
+  <ul>
+    <li>What you were doing when the issue happened</li>
+    <li>Which AI chat site (ChatGPT, Claude, etc.)</li>
+    <li>Your Chrome version (<code>chrome://version</code>)</li>
+    <li>The Heedful version (Options page header)</li>
+    <li>A screenshot if the issue is visual</li>
+  </ul>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <div>© 2026 Heedful. Built by Matteo Martignago at Riff Labs.</div>
+    <div><a href="/">← Back to heedful.app</a></div>
+  </div>
+</footer>
+
+</body>
+</html>
