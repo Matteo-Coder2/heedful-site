@@ -769,7 +769,7 @@
             <svg width="28" height="28" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0;"><path d="M128 128L17.1 64A128 128 0 0 1 238.9 64Z" fill="#EA4335"/><path d="M128 128L238.9 64A128 128 0 0 1 128 256Z" fill="#FBBC05"/><path d="M128 128L128 256A128 128 0 0 1 17.1 64Z" fill="#34A853"/><circle cx="128" cy="128" r="72" fill="#fff"/><circle cx="128" cy="128" r="56" fill="#4285F4"/></svg>
             <a class="btn btn-primary" href="#install">Install free</a>
           </div>
-          <a class="btn btn-secondary" href="https://github.com/Matteo-Coder2/pasteguard-rules" target="_blank">
+          <a class="btn btn-secondary" href="https://github.com/Matteo-Coder2/heedful-rules" target="_blank">
             See detection rules →
           </a>
         </div>
@@ -1279,7 +1279,7 @@
       <details>
         <summary>How do I verify nothing actually leaves my browser?</summary>
         <p>
-          Open Chrome DevTools → Network tab → filter by the extension ID. Paste anything sensitive. You'll see zero outbound requests. Our manifest declares no <code>host_permissions</code> for any remote origin. Only the 12 AI chat sites the content script runs on, and we never send their contents anywhere. The detection rules are published at <a href="https://github.com/Matteo-Coder2/pasteguard-rules" target="_blank" style="color: var(--low);">github.com/Matteo-Coder2/pasteguard-rules</a> so you can audit exactly what we look for.
+          Open Chrome DevTools → Network tab → filter by the extension ID. Paste anything sensitive. You'll see zero outbound requests. Our manifest declares no <code>host_permissions</code> for any remote origin. Only the 12 AI chat sites the content script runs on, and we never send their contents anywhere. The detection rules are published at <a href="https://github.com/Matteo-Coder2/heedful-rules" target="_blank" style="color: var(--low);">github.com/Matteo-Coder2/heedful-rules</a> so you can audit exactly what we look for.
         </p>
       </details>
 
@@ -1321,7 +1321,7 @@
       <details>
         <summary>Why does it need permission for x.com?</summary>
         <p>
-          Grok opens as a sidebar inside x.com that can appear on any URL (a tweet, a profile, the timeline). To protect that sidebar, the content script has to load on every x.com page. But the actual scanning is gated to composers with Grok-specific markers. Tweet drafts and reply boxes are explicitly ignored. We never read their contents. The full caveat is in our <a href="https://github.com/Matteo-Coder2/pasteguard-rules/blob/main/PRIVACY.md" target="_blank" style="color: var(--low);">privacy policy</a>.
+          Grok opens as a sidebar inside x.com that can appear on any URL (a tweet, a profile, the timeline). To protect that sidebar, the content script has to load on every x.com page. But the actual scanning is gated to composers with Grok-specific markers. Tweet drafts and reply boxes are explicitly ignored. We never read their contents. The full caveat is in our <a href="https://github.com/Matteo-Coder2/heedful-rules/blob/main/PRIVACY.md" target="_blank" style="color: var(--low);">privacy policy</a>.
         </p>
       </details>
 
@@ -1400,7 +1400,7 @@
       </div>
       <div class="footer-col">
         <div class="footer-col__title">Open source</div>
-        <a href="https://github.com/Matteo-Coder2/pasteguard-rules" target="_blank">Detection rules</a>
+        <a href="https://github.com/Matteo-Coder2/heedful-rules" target="_blank">Detection rules</a>
         <a href="/privacy">Privacy policy</a>
       </div>
       <div class="footer-col">
